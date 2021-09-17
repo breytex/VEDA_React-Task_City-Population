@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { debounce } from "../debounce";
 import "./Autocomplete.css";
 
@@ -6,25 +6,29 @@ const API_URL = "https://api.teleport.org/api/cities?limit=5&search=";
 
 const Autocomplete = ({ onCityClick }) => {
     const [input, setInput] = useState("");
-    const [inFlight, setInFlight] = useState(false);
     const [cityChoices, setCityChoices] = useState([]);
+    const inFlightRef = useRef();
 
     useEffect(() => {
-        if (!inFlight && input.length > 0) {
-            fetchCitiesByString();
+        if (!inFlightRef.current && input.length > 0) {
+            fetchCitiesByString(input);
         }
     }, [input])
 
-    const fetchCitiesByString = debounce(async () => {
-        setInFlight(true);
-        const res = await fetch(`${API_URL}${encodeURIComponent(input)}`);
+    const fetchCitiesByString = useCallback(
+        debounce(async (inputValue) => {
+            inFlightRef.current = true;
+            const res = await fetch(`${API_URL}${encodeURIComponent(inputValue)}`);
 
-        if (res.status === 200) {
-            const body = await res.json();
-            setCityChoices(body?._embedded["city:search-results"]);
-        }
-        setInFlight(false);
-    }, 250);
+            if (res.status === 200) {
+                const body = await res.json();
+                setCityChoices(body?._embedded["city:search-results"]);
+            }
+            inFlightRef.current = false;
+        }, 250),
+        []
+    );
+    
     return (
         <span>
             <input type="text"

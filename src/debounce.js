@@ -1,10 +1,10 @@
 export const debounce = (func, wait) => {
 	let timeout;
-	return () => {
+	return (...args) => {
 		clearTimeout(timeout);
 		timeout = setTimeout(() => {
 			timeout = null;
-			func();
+			func(...args);
         }, wait);
 	}
 }
